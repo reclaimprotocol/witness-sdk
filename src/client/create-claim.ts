@@ -1,5 +1,4 @@
-import { concatenateUint8Arrays, strToUint8Array, TLSPacketContext } from '@reclaimprotocol/tls'
-import { base64 } from 'ethers/lib/utils'
+import { strToUint8Array, TLSPacketContext } from '@reclaimprotocol/tls'
 import { makeRpcTlsTunnel } from 'src/client/tunnels/make-rpc-tls-tunnel'
 import { getAttestorClientFromPool } from 'src/client/utils/attestor-pool'
 import { DEFAULT_HTTPS_PORT } from 'src/config'
