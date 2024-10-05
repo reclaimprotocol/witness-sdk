@@ -1,0 +1,72 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 'current'
+
+      - name: Set commit message
+        run: echo "COMMIT_MESSAGE=$(git log -1 --pretty=%B)" >> $GITHUB_ENV
+
+      - name: Install dependencies
+        run: |
+          npm install
+          npm install koffi
+
+      - name: Run tests
+        if: ${{ !contains(env.COMMIT_MESSAGE, 'wip') && !contains(env.COMMIT_MESSAGE, 'docs') }}
+        run: |
+          npm run test || echo "Tests failed" && exit 1
+
+      - name: Cleanup
+        if: ${{ always() }}
+        run: |
+          echo "Cleaning up..."
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up AWS CLI
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install zip -y
+          sudo apt-get install awscli -y
+          mkdir ~/.aws/
+          touch ~/.aws/credentials
+          printf "[default]\nregion=ap-south-1\naws_access_key_id = %s\naws_secret_access_key = %s\n" "${{ secrets.AWS_ACCESS_KEY_ID }}" "${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> ~/.aws/credentials
+          touch ~/.aws/config
+
+      - name: Set up environment
+        run: |
+          echo -e "${{ secrets.ENV }}" > .env.production
+
+      - name: Create deployment package
+        run: |
+          export FILE=pkg-$(date +%s%N).zip
+          zip -r $FILE * .* -x '*.git*'
+
+      - name: Deploy to AWS
+        run: |
+          export BUCKET=elasticbeanstalk-ap-south-1-342772716647
+          export APP_NAME=reclaim-protocol
+          export ENV_NAME=witness
+          export VERSION=${{ github.sha }}
+          aws s3 cp $FILE s3://$BUCKET/$FILE
+          aws elasticbeanstalk create-application-version --application-name $APP_NAME --version-label $VERSION --source-bundle S3Bucket=$BUCKET,S3Key=$FILE
+          aws elasticbeanstalk update-environment --application-name $APP_NAME --environment-name $ENV_NAME --version-label $VERSION
