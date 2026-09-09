@@ -1,0 +1,13 @@
+# Asset Management Policy — repository asset record
+# Draft generated from the Repository Policy Reflection register (2026-08-26).
+# Owners MUST fill the TBD fields and approve before this record counts as implemented.
+policy_version: TBD
+classification: Restricted
+criticality: Critical
+business_owner: TBD
+technical_owner: TBD
+reviewed_on: 2026-08-26
+review_status: draft-pending-owner-approval
+exception_reference: none
+rationale: >-
+  Add repository classification metadata; require protocol/security-owner attestation.
